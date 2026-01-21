@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import sharp from "sharp";
+import fetch from "node-fetch";
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -20,24 +21,27 @@ app.post("/renderizar", upload.any(), async (req, res) => {
 
     const datos = JSON.parse(datosRaw);
 
-    // 🔴 CAMBIA ESTA URL POR LA RAW REAL DE TU LOGO EN GITHUB
+    // 🔵 URL RAW REAL DEL LOGO EN GITHUB
     const logoUrl =
       "https://raw.githubusercontent.com/oficinapartesmunipuchuncavi-a11y/-assets/main/logo.png";
 
+    // 🔽 DESCARGAR LOGO COMO BUFFER
+    const logoResponse = await fetch(logoUrl);
+    if (!logoResponse.ok) {
+      throw new Error("No se pudo descargar el logo");
+    }
+    const logoBuffer = Buffer.from(await logoResponse.arrayBuffer());
+
+    // 🟦 REDIMENSIONAR LOGO
+    const logoResized = await sharp(logoBuffer)
+      .resize(140, 140)
+      .png()
+      .toBuffer();
+
+    // 🎨 SVG (CUADRO + TEXTO)
     const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080">
 
-  <!-- LOGO ARRIBA IZQUIERDA -->
-  <image
-    href="${logoUrl}"
-    x="30"
-    y="30"
-    width="140"
-    height="140"
-    preserveAspectRatio="xMidYMid meet"
-  />
-
-  <!-- CUADRO NEGRO INFERIOR CENTRADO -->
   <rect
     x="90"
     y="780"
@@ -64,7 +68,6 @@ app.post("/renderizar", upload.any(), async (req, res) => {
     }
   </style>
 
-  <!-- TEXTO CENTRADO -->
   <text x="540" y="830" class="titulo">${datos.titulo}</text>
   <text x="540" y="875" class="texto">${datos.linea1}</text>
   <text x="540" y="915" class="texto">${datos.linea2}</text>
@@ -74,9 +77,13 @@ app.post("/renderizar", upload.any(), async (req, res) => {
 </svg>
 `;
 
+    // 🧩 COMPOSICIÓN FINAL
     const finalImage = await sharp(imagenFile.buffer)
       .resize(1080, 1080)
-      .composite([{ input: Buffer.from(svg) }])
+      .composite([
+        { input: logoResized, top: 30, left: 30 }, // LOGO ARRIBA IZQ
+        { input: Buffer.from(svg) }                // TEXTO + CUADRO
+      ])
       .png()
       .toBuffer();
 
