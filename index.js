@@ -30,10 +30,17 @@ app.post("/renderizar", upload.any(), async (req, res) => {
      * Descargar logo desde GitHub RAW
      */
     const logoResponse = await fetch(LOGO_URL);
-    if (!logoResponse.ok) {
-      throw new Error("No se pudo descargar el logo");
-    }
-    const logoBuffer = Buffer.from(await logoResponse.arrayBuffer());
+if (!logoResponse.ok) {
+  throw new Error("No se pudo descargar el logo");
+}
+
+const logoBuffer = await sharp(
+  Buffer.from(await logoResponse.arrayBuffer())
+)
+  .resize(160, 160) // 👈 TAMAÑO DEL LOGO (AJUSTABLE)
+  .png()
+  .toBuffer();
+
 
     /**
      * SVG: cuadro negro inferior + texto centrado
