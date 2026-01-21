@@ -37,7 +37,7 @@ if (!logoResponse.ok) {
 const logoBuffer = await sharp(
   Buffer.from(await logoResponse.arrayBuffer())
 )
-  .resize(140, 140) // 👈 TAMAÑO DEL LOGO (AJUSTABLE)
+  .resize(100, 100) // 👈 TAMAÑO DEL LOGO (AJUSTABLE)
   .png()
   .toBuffer();
 
