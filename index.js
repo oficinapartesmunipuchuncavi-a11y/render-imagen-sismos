@@ -1,18 +1,22 @@
 import express from "express";
 import multer from "multer";
 import sharp from "sharp";
+import fetch from "node-fetch";
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
 /**
- * URL RAW DEL LOGO (IMPORTANTE: raw.githubusercontent.com)
+ * URL RAW DEL LOGO (GitHub RAW)
  */
 const LOGO_URL =
   "https://raw.githubusercontent.com/oficinapartesmunipuchuncavi-a11y/activos/main/logo2.png";
 
 app.post("/renderizar", upload.any(), async (req, res) => {
   try {
+    // =========================
+    // VALIDACIONES
+    // =========================
     const imagenFile = req.files.find(f => f.fieldname === "imagen");
     const datosRaw = req.body.datos;
 
@@ -26,29 +30,26 @@ app.post("/renderizar", upload.any(), async (req, res) => {
 
     const datos = JSON.parse(datosRaw);
 
-    /**
-     * Descargar logo desde GitHub RAW
-     */
+    // =========================
+    // DESCARGAR LOGO
+    // =========================
     const logoResponse = await fetch(LOGO_URL);
-if (!logoResponse.ok) {
-  throw new Error("No se pudo descargar el logo");
-}
+    if (!logoResponse.ok) {
+      throw new Error("No se pudo descargar el logo");
+    }
 
-const logoBuffer = await sharp(
-  Buffer.from(await logoResponse.arrayBuffer())
-)
-  .resize(100, 100) // 👈 TAMAÑO DEL LOGO (AJUSTABLE)
-  .png()
-  .toBuffer();
+    const logoBuffer = await sharp(
+      Buffer.from(await logoResponse.arrayBuffer())
+    )
+      .resize(100, 100)
+      .png() // el logo puede seguir siendo PNG
+      .toBuffer();
 
-
-    /**
-     * SVG: cuadro negro inferior + texto centrado
-     */
+    // =========================
+    // SVG OVERLAY (TEXTOS)
+    // =========================
     const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080">
-
-  <!-- Cuadro negro inferior -->
   <rect
     x="90"
     y="780"
@@ -80,13 +81,12 @@ const logoBuffer = await sharp(
   <text x="540" y="915" class="texto">${datos.linea2}</text>
   <text x="540" y="955" class="texto">${datos.linea3}</text>
   <text x="540" y="995" class="texto">${datos.linea4}</text>
-
 </svg>
 `;
 
-    /**
-     * Render final
-     */
+    // =========================
+    // RENDER FINAL (JPG)
+    // =========================
     const finalImage = await sharp(imagenFile.buffer)
       .resize(1080, 1080)
       .composite([
@@ -101,10 +101,18 @@ const logoBuffer = await sharp(
           left: 0
         }
       ])
-      .png()
+      .jpeg({ quality: 90 }) // 👈 JPG FINAL
       .toBuffer();
 
-    res.set("Content-Type", "image/png");
+    // =========================
+    // HEADERS CORRECTOS
+    // =========================
+    res.set("Content-Type", "image/jpeg");
+    res.set(
+      "Content-Disposition",
+      'inline; filename="render.jpg"'
+    );
+
     res.send(finalImage);
 
   } catch (err) {
@@ -113,6 +121,9 @@ const logoBuffer = await sharp(
   }
 });
 
+// =========================
+// SERVER
+// =========================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Servidor escuchando en puerto", PORT);
