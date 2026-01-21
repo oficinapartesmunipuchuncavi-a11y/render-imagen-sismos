@@ -6,13 +6,17 @@ import fetch from "node-fetch";
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
+// URL RAW DEL LOGO (CONFIRMADA)
+const LOGO_URL =
+  "https://raw.githubusercontent.com/oficinapartesmunipuchuncavi-a11y/activos/main/logo1.png";
+
 app.post("/renderizar", upload.any(), async (req, res) => {
   try {
     const imagenFile = req.files.find(f => f.fieldname === "imagen");
     const datosRaw = req.body.datos;
 
     if (!imagenFile) {
-      return res.status(400).send("No llegó imagen");
+      return res.status(400).send("No llegó imagen base");
     }
 
     if (!datosRaw) {
@@ -21,24 +25,25 @@ app.post("/renderizar", upload.any(), async (req, res) => {
 
     const datos = JSON.parse(datosRaw);
 
-    // 🔵 URL RAW REAL DEL LOGO EN GITHUB
-    const logoUrl =
-      "https://raw.githubusercontent.com/oficinapartesmunipuchuncavi-a11y/-assets/main/logo.png";
-
-    // 🔽 DESCARGAR LOGO COMO BUFFER
-    const logoResponse = await fetch(logoUrl);
+    // ===============================
+    // DESCARGAR LOGO DESDE GITHUB
+    // ===============================
+    const logoResponse = await fetch(LOGO_URL);
     if (!logoResponse.ok) {
-      throw new Error("No se pudo descargar el logo");
+      throw new Error("No se pudo descargar el logotipo");
     }
+
     const logoBuffer = Buffer.from(await logoResponse.arrayBuffer());
 
-    // 🟦 REDIMENSIONAR LOGO
+    // Redimensionar logo
     const logoResized = await sharp(logoBuffer)
-      .resize(140, 140)
+      .resize(120, 120, { fit: "contain" })
       .png()
       .toBuffer();
 
-    // 🎨 SVG (CUADRO + TEXTO)
+    // ===============================
+    // SVG CUADRO INFERIOR
+    // ===============================
     const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080">
 
@@ -77,12 +82,24 @@ app.post("/renderizar", upload.any(), async (req, res) => {
 </svg>
 `;
 
-    // 🧩 COMPOSICIÓN FINAL
+    // ===============================
+    // COMPOSICIÓN FINAL
+    // ===============================
     const finalImage = await sharp(imagenFile.buffer)
       .resize(1080, 1080)
       .composite([
-        { input: logoResized, top: 30, left: 30 }, // LOGO ARRIBA IZQ
-        { input: Buffer.from(svg) }                // TEXTO + CUADRO
+        // LOGO ARRIBA IZQUIERDA
+        {
+          input: logoResized,
+          top: 30,
+          left: 30
+        },
+        // CUADRO + TEXTO
+        {
+          input: Buffer.from(svg),
+          top: 0,
+          left: 0
+        }
       ])
       .png()
       .toBuffer();
@@ -91,7 +108,7 @@ app.post("/renderizar", upload.any(), async (req, res) => {
     res.send(finalImage);
 
   } catch (err) {
-    console.error("ERROR RENDER:", err);
+    console.error("ERROR DE RENDERIZADO:", err);
     res.status(500).send("Error renderizando imagen");
   }
 });
