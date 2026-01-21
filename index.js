@@ -20,11 +20,24 @@ app.post("/renderizar", upload.any(), async (req, res) => {
 
     const datos = JSON.parse(datosRaw);
 
-    // === SVG CON CUADRO ABAJO CENTRADO ===
+    // 🔴 CAMBIA ESTA URL POR LA RAW REAL DE TU LOGO EN GITHUB
+    const logoUrl =
+      "https://raw.githubusercontent.com/oficinapartesmunipuchuncavi-a11y/-assets/main/logo.png";
+
     const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080">
 
-  <!-- Cuadro negro inferior centrado -->
+  <!-- LOGO ARRIBA IZQUIERDA -->
+  <image
+    href="${logoUrl}"
+    x="30"
+    y="30"
+    width="140"
+    height="140"
+    preserveAspectRatio="xMidYMid meet"
+  />
+
+  <!-- CUADRO NEGRO INFERIOR CENTRADO -->
   <rect
     x="90"
     y="780"
@@ -51,9 +64,8 @@ app.post("/renderizar", upload.any(), async (req, res) => {
     }
   </style>
 
-  <!-- Texto centrado dentro del cuadro -->
+  <!-- TEXTO CENTRADO -->
   <text x="540" y="830" class="titulo">${datos.titulo}</text>
-
   <text x="540" y="875" class="texto">${datos.linea1}</text>
   <text x="540" y="915" class="texto">${datos.linea2}</text>
   <text x="540" y="955" class="texto">${datos.linea3}</text>
