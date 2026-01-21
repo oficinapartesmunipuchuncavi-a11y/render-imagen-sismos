@@ -5,7 +5,7 @@ import sharp from "sharp";
 const app = express();
 const upload = multer();
 
-// RUTA CORRECTA
+// RUTA
 app.post("/renderizar", upload.fields([
   { name: "imagen", maxCount: 1 },
   { name: "datos", maxCount: 1 }
@@ -28,22 +28,23 @@ app.post("/renderizar", upload.fields([
       </svg>
     `;
 
-    const imagenFinal = await sharp(imagenBase)
+    const salida = await sharp(imagenBase)
       .composite([{ input: Buffer.from(svg), top: 0, left: 0 }])
       .png()
       .toBuffer();
 
     res.set("Content-Type", "image/png");
-    res.send(imagenFinal);
+    res.send(salida);
 
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error renderizando imagen" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Error al renderizar" });
   }
 });
 
-// PUERTO PARA RENDER (ESTO ES CLAVE)
+// 🔥 ESTO ES LO QUE FALTABA
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log("Servidor activo en puerto", PORT);
+  console.log(`Servidor activo en puerto ${PORT}`);
 });
