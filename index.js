@@ -5,46 +5,44 @@ import sharp from "sharp";
 const app = express();
 const upload = multer();
 
-app.post("/render", upload.fields([
-  { name: "image" },
-  { name: "data" }
+// RUTA CORRECTA
+app.post("/renderizar", upload.fields([
+  { name: "imagen", maxCount: 1 },
+  { name: "datos", maxCount: 1 }
 ]), async (req, res) => {
   try {
-    const baseImage = req.files.image[0].buffer;
-    const data = JSON.parse(req.body.data);
+    const imagenBase = req.files.imagen[0].buffer;
+    const datos = JSON.parse(req.body.datos);
 
-    const svgText = `
+    const svg = `
       <svg width="1200" height="675">
         <style>
-          .title { fill: white; font-size: 48px; font-weight: bold; }
-          .text { fill: white; font-size: 32px; }
+          .titulo { fill: white; font-size: 48px; font-weight: bold; }
+          .texto { fill: white; font-size: 32px; }
         </style>
-        <text x="40" y="60" class="title">${data.titulo}</text>
-        <text x="40" y="120" class="text">${data.linea1}</text>
-        <text x="40" y="170" class="text">${data.linea2}</text>
-        <text x="40" y="220" class="text">${data.linea3}</text>
-        <text x="40" y="270" class="text">${data.linea4}</text>
+        <text x="40" y="60" class="titulo">${datos.titulo}</text>
+        <text x="40" y="120" class="texto">${datos.linea1}</text>
+        <text x="40" y="170" class="texto">${datos.linea2}</text>
+        <text x="40" y="220" class="texto">${datos.linea3}</text>
+        <text x="40" y="270" class="texto">${datos.linea4}</text>
       </svg>
     `;
 
-    const finalImage = await sharp(baseImage)
-      .composite([{ input: Buffer.from(svgText), top: 0, left: 0 }])
+    const imagenFinal = await sharp(imagenBase)
+      .composite([{ input: Buffer.from(svg), top: 0, left: 0 }])
       .png()
       .toBuffer();
 
     res.set("Content-Type", "image/png");
-    res.send(finalImage);
+    res.send(imagenFinal);
 
   } catch (error) {
     console.error(error);
-    res.status(500).send("Error generando imagen");
+    res.status(500).json({ error: "Error renderizando imagen" });
   }
 });
 
-app.get("/", (req, res) => {
-  res.send("Servicio de imágenes activo");
-});
-
+// PUERTO PARA RENDER (ESTO ES CLAVE)
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Servidor activo en puerto", PORT);
