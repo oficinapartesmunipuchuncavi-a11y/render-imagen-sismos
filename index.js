@@ -121,6 +121,46 @@ app.post("/renderizar", upload.any(), async (req, res) => {
   }
 });
 
+// =======================================
+// PROXY MAPBOX → URL LISTA PARA REDES
+// =======================================
+app.get("/mapbox", async (req, res) => {
+  try {
+    const mapboxUrl = req.query.url;
+
+    if (!mapboxUrl) {
+      return res.status(400).send("Falta parámetro ?url=");
+    }
+
+    // Seguridad mínima: solo permitir Mapbox
+    if (!mapboxUrl.startsWith("https://api.mapbox.com/")) {
+      return res.status(400).send("Solo se permite api.mapbox.com");
+    }
+
+    const response = await fetch(mapboxUrl);
+
+    if (!response.ok) {
+      return res
+        .status(502)
+        .send("Error al obtener imagen desde Mapbox");
+    }
+
+    const contentType =
+      response.headers.get("content-type") || "image/jpeg";
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    // Headers compatibles con Instagram / Facebook
+    res.set("Content-Type", contentType);
+    res.set("Cache-Control", "public, max-age=3600");
+
+    res.send(buffer);
+  } catch (err) {
+    console.error("ERROR MAPBOX PROXY:", err);
+    res.status(500).send("Error proxy Mapbox");
+  }
+});
+
 // =========================
 // SERVER
 // =========================
